@@ -2,7 +2,7 @@
 
 This project was an attempt to reverse-engineer the algorithm used to procedurally generate the fifty levels of Telengard (Commodore 64 version.)
 
-[[docs/capture.png|The starting position]]
+![The starting position](docs/capture.png)
 
 
 
