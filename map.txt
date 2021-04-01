@@ -1,0 +1,123 @@
+Telengard map:
+
+FNUP(x) = x & 3
+FNLF(x) = (x / 4) & 3 
+  1 =
+  2 = 
+  3 = wall
+
+FNRD(x) = x % 10
+FNS(x)  = x / 256 
+TF=256
+TH=255
+
+CY = character Y position   (1..200)
+CX = character X position   (1..200)
+CZ = character Z position   (1..50??)
+
+starting position: CX=25 CY=13 CZ=1
+
+L% is current square status
+  bits 0-1 = north wall 
+             1 = open
+             2 = door
+             3 = wall
+  bits 2-3 = west wall
+  bits 8+  = contents?
+             1 = on level 1, stairway to tavern
+                 otherwise an elevator 
+             2 = pit (if not level 50)
+             3 = teleport
+                 location is based on teleport location, or
+                 20% chance of recursive call through location munger
+             4 = stairs (down)
+             5 = altar
+             6 = fountain
+             7 = cube
+                 Same X, Y values, 20% chance of random level
+             8 = throne
+             9 = small box
+
+P(3,3) surroundings indexed by y,x
+P(1,1) is current square?
+P(2,1) is square below (south)
+P(1,2) is square to the right (east)
+
+SF == state flags?  timers?
+SF(11) = drunk
+SF(8) = walk through walls
+
+Subroutines:
+
+6000: show room contents
+   L% = current location
+        I = contents % 10
+
+   H% = location 1 level up
+        J = contents % 10
+
+   IF ( CZ = 1 ) THEN J = 0 // Nothing above level 1
+   IF ( CZ = 50 AND I = 4 ) THEN I = 0 // No stairs down from level 50?
+   IF ( I = 0 and J != 4 ) nothing there
+   ON I GOTO 6100,6300,6400,6500,6600,6700,6800,6900,7100
+
+6100: (1) elevator or stairway up
+6200: elevator
+6300: (2) pit
+6400: (3) teleport
+6500: (4) stairway 
+6600: (5) altar
+6700: (6) fountain
+6800: (7) cube
+6900: (8) throne
+7100: (9) small box
+
+10010: calculate room state in H% from X, Y, and Z parameters
+       XO=1.6915
+       YO=1.4278
+       ZO=1.2462
+       W0=4694      
+
+       // pseudorandom function
+       Q = X*XO + Y*YO + Z*ZO + (X+XO)*(Y+YO)*(Z+ZO)
+       H%= ( Q-INT(Q) ) * W0:
+
+       // if high byte > 5, then set it to zero 
+       IF H% / 256 > 5 THEN H% = H% AND 255
+       // If it's non zero, then use 
+       IF INT(H%/256)>0 THEN {
+         newhb = INT( ( Q*10 - INT(Q*10) ) * 15 + 1 )  // 1...15?
+         H% = (newhb * 256 ) OR ( H% AND 255 )
+       }
+
+       // Set walls at edge of map
+       IF X=1 OR X=201 THEN H%=H% OR 12
+       IF Y=1 OR Y=201 THEN H%=H% OR 3
+
+       RETURN
+
+15000: set P(x,y)
+17000: display?
+30100: move monsters further away
+33100: *COPY SPRITE S1 TO SLOT S2*
+
+
+Inn names: Z$( 9, 2 ) 
+
+Z(x, 0) = "SALTY","BOLD","LOUD","OLD","GOODLY",
+          "WORTHY","LOFTY","FINE","ROCKY","AGED"
+Z(x, 1) = "ROAD","EYE","TOOTH","DRAGON","MUG",
+          "DEMON","WHARF","BRIDGE","MEADE","ALE"
+Z(x, 2) = "TAVERN","ALEHOUSE","CELLAR","CLUB","INN",
+          "HOUSE","INN","LODGE","MEADHALL","RESTHOUSE"
+
+Inn at X, Y is named Z( x*y, 0 ) + Z( x+y, 0 ) + Z( x*3 + y*7, 2 )
+So, starting location 25, 13 = Z(5,0) + Z(8,1) + Z(6,2)
+                             = "WORTHY MEADE INN"
+
+
+
+Calculation for 22,15 is not right: map says altar, actually a fountain
+934.095397
+448
+4032
